@@ -1,0 +1,16 @@
+[Unit]
+Description=Restricted exec for Aru
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/exec
+EnvironmentFile=/opt/exec/exec.env
+ExecStart=/usr/bin/node /opt/exec/exec-server.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
