@@ -1,0 +1,24 @@
+services:
+  home-api:
+    image: node:22-alpine
+    container_name: home-api
+    working_dir: /app
+    command: node --experimental-sqlite server.js
+    env_file: .env
+    volumes:
+      - ./api:/app
+      - ./data:/data
+    ports:
+      - "127.0.0.1:18200:18200"
+    restart: always
+
+  home-web:
+    image: node:22-alpine
+    container_name: home-web
+    working_dir: /app
+    command: node static.js
+    volumes:
+      - ./web:/app
+    ports:
+      - "127.0.0.1:18201:18201"
+    restart: always
