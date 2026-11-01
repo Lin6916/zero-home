@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>零的小手机</title>
+<style>
+:root{--ink:#3d3438;--sub:#9a8f94;--me:#ffd7e2;--meInk:#5c3a44;--line:#efe6e9}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;padding:14px 12px 22px;font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;color:var(--ink);background:radial-gradient(120% 80% at 10% 0%,#fff8fb 0,transparent 60%),linear-gradient(160deg,#ffe9ef 0,#e8eefc 52%,#fff6e6 100%);display:flex;flex-direction:column;align-items:center;gap:10px}
+.phone{position:relative;width:100%;max-width:330px;height:calc(100vh - 90px);max-height:700px;border-radius:42px;background:linear-gradient(165deg,#fff,#f6f1f2);border:1px solid #ece4e6;padding:8px;display:flex;box-shadow:0 18px 40px -18px rgba(80,60,80,.45)}
+.screen{position:relative;flex:1;border-radius:34px;overflow:hidden;background:#fffdfd;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:92px;height:18px;border-radius:0 0 14px 14px;background:#f6f1f2;z-index:5}
+.status{height:32px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 15px;font-size:11px;color:var(--sub)}
+.top{flex:none;display:flex;align-items:center;gap:9px;padding:0 15px 8px;cursor:pointer}
+.avatar{width:29px;height:29px;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff,#ffc2d3 55%,#ff9dba);display:grid;place-items:center;font-size:12px;box-shadow:0 2px 6px -2px rgba(255,140,175,.7)}
+.top h1{margin:0;font-size:14px;font-weight:700}
+.top .sub{font-size:10px;color:var(--sub)}
+.page{flex:1;overflow-y:auto;padding:0 13px 10px}
+.page::-webkit-scrollbar{width:0}
+.msg{display:flex;margin:8px 0;animation:pop .25s ease both}
+.msg.me{justify-content:flex-end}
+.bubble{max-width:80%;padding:9px 13px;border-radius:17px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;box-shadow:0 2px 6px -3px rgba(90,70,90,.22)}
+.msg.you .bubble{background:#fff;border-bottom-left-radius:6px}
+.msg.me .bubble{background:var(--me);color:var(--meInk);border-bottom-right-radius:6px}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.tip{text-align:center;font-size:10.5px;color:var(--sub);margin:6px 0}
+.composer{flex:none;display:flex;gap:7px;align-items:center;padding:8px 11px 13px;background:#fffdfd}
+.field{flex:1;height:36px;border-radius:18px;background:#f7f2f4;border:1px solid var(--line);padding:0 13px;font-size:13.5px;outline:none;color:var(--ink)}
+.send{width:36px;height:36px;border-radius:50%;border:none;background:linear-gradient(160deg,#ffc0d2,#ff9dba);color:#fff;font-size:15px}
+.send:disabled{opacity:.5}
+.mem{padding:10px 12px;border-radius:13px;background:#fff;margin:7px 0;font-size:12.5px;box-shadow:0 4px 12px -10px rgba(90,70,90,.7)}
+.mem small{color:var(--sub);font-size:10.5px}
+.sectitle{font-size:11px;color:var(--sub);letter-spacing:1px;margin:12px 2px 6px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:9px 0;font-size:12.5px;color:#6f636a}
+.row input{flex:1;height:32px;border-radius:10px;border:1px solid var(--line);padding:0 10px;font-size:12.5px;background:#fff;color:var(--ink)}
+.row textarea{width:100%;height:96px;border-radius:12px;border:1px solid var(--line);padding:9px 11px;font-size:12.5px;background:#fff;color:var(--ink);resize:vertical}
+.btn{border:none;border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:600;background:linear-gradient(160deg,#ffc0d2,#ff9dba);color:#fff}
+.ghost{background:#fff;border:1px solid var(--line);color:var(--sub)}
+.homebar{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:100px;height:4px;border-radius:3px;background:#e6dcdf}
+.caption{font-size:10.5px;color:#a2949b}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+    <div class="status"><span id="clock">--:--</span><span>●</span></div>
+    <div class="top" id="topbar">
+      <div class="avatar">零</div>
+      <div><h1>零</h1><span class="sub" id="subtitle">本地</span></div>
+    </div>
+    <div class="page" id="page"></div>
+    <div class="composer" id="composer">
+      <input class="field" id="input" placeholder="说点什么…">
+      <button class="send" id="send">↑</button>
+    </div>
+    <div class="homebar"></div>
+  </div>
+</div>
+<div class="caption">点最上面名字那行回主页</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const page = $("page"), composer = $("composer"), subtitle = $("subtitle");
+const store = {
+  get api(){ return localStorage.getItem("home_api") || location.origin.replace(/:(\\d+)$/, ":18200"); },
+  get key(){ return localStorage.getItem("home_key") || ""; },
+  get sid(){ return Number(localStorage.getItem("home_sid") || 1); }
+};
+function tick(){ const d=new Date(); $("clock").textContent=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+tick(); setInterval(tick, 20000);
+async function api(path, opts={}){
+  const r = await fetch(store.api + path, { method: opts.method||"GET", headers: Object.assign({"content-type":"application/json","x-home-key":store.key}, opts.headers||{}), body: opts.body?JSON.stringify(opts.body):undefined });
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok || j.ok===false) throw new Error(j.error || ("HTTP "+r.status));
+  return j;
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function bubble(role, text){
+  const d = document.createElement("div");
+  d.className = "msg " + (role==="user" ? "me" : "you");
+  d.innerHTML = '<div class="bubble">' + esc(text) + '</div>';
+  return d;
+}
+let sending = false;
+async function showChat(){
+  subtitle.textContent = "本地 · " + store.api.replace(/^https?:\\/\\//, "").slice(0,22);
+  composer.style.display = "flex";
+  page.innerHTML = '<div class="tip">正在读…</div>';
+  try{
+    const res = await api("/api/messages?session_id=" + store.sid);
+    page.innerHTML = "";
+    if(!res.messages.length){ const t=document.createElement("div"); t.className="tip"; t.textContent="还没说过话"; page.appendChild(t); }
+    res.messages.forEach(m => page.appendChild(bubble(m.role, m.content)));
+    page.scrollTop = page.scrollHeight;
+  }catch(e){ page.innerHTML = '<div class="tip">没接上：' + esc(e.message) + '</div>'; }
+}
+async function send(){
+  const el = $("input"); const text = el.value.trim();
+  if(!text || sending) return;
+  sending = true; $("send").disabled = true;
+  const holder = page.querySelector(".tip"); if(holder) holder.remove();
+  page.appendChild(bubble("user", text)); el.value = "";
+  const wait = document.createElement("div"); wait.className="msg you"; wait.innerHTML='<div class="bubble">……</div>';
+  page.appendChild(wait); page.scrollTop = page.scrollHeight;
+  try{
+    const res = await api("/api/chat", {method:"POST", body:{session_id: store.sid, message: text}});
+    wait.remove(); page.appendChild(bubble("assistant", res.reply)); page.scrollTop = page.scrollHeight;
+  }catch(e){
+    wait.remove(); page.appendChild(bubble("assistant", "（没说出来：" + e.message + "）"));
+  }finally{ sending = false; $("send").disabled = false; }
+}
+async function showMem(){
+  subtitle.textContent = "记忆库"; composer.style.display = "none";
+  page.innerHTML = '<div class="tip">正在读…</div>';
+  try{
+    const res = await api("/api/memories");
+    page.innerHTML = '<div class="sectitle">压缩下来的旧事</div>';
+    if(!res.memories.length) page.innerHTML += '<div class="tip">还没攒下东西</div>';
+    res.memories.forEach(m=>{
+      const d=document.createElement("div"); d.className="mem";
+      d.innerHTML = esc(m.summary) + '<br><small>' + new Date(m.timestamp).toLocaleString() + '</small>';
+      page.appendChild(d);
+    });
+  }catch(e){ page.innerHTML = '<div class="tip">没接上：' + esc(e.message) + '</div>'; }
+}
+async function showSet(){
+  subtitle.textContent = "设置"; composer.style.display = "none";
+  page.innerHTML = '<div class="tip">正在读…</div>';
+  let s = {};
+  try{ s = (await api("/api/settings")).settings; }catch(e){}
+  page.innerHTML = '<div class="sectitle">后端</div>' +
+    '<div class="row">地址<input id="a_api" value="' + esc(store.api) + '"></div>' +
+    '<div class="row">口令<input id="a_key" value="' + esc(store.key) + '" placeholder="x-home-key"></div>' +
+    '<div class="sectitle">性格</div>' +
+    '<div class="row" style="display:block">系统提示词</div>' +
+    '<div class="row"><textarea id="a_prompt">' + esc(s.system_prompt||"") + '</textarea></div>' +
+    '<div class="row">温度<input id="a_temp" value="' + (s.temperature ?? 0.8) + '"></div>' +
+    '<div class="row">上下文轮数<input id="a_rounds" value="' + (s.max_context_rounds ?? 20) + '"></div>' +
+    '<div class="row">压缩阈值<input id="a_ct" value="' + (s.compress_threshold ?? 12000) + '"></div>' +
+    '<div class="row" style="justify-content:flex-end;gap:8px"><button class="btn ghost" id="a_back">回聊天</button><button class="btn" id="a_save">保存</button></div>' +
+    '<div class="tip" id="a_msg"></div>';
+  $("a_back").onclick = showChat;
+  $("a_save").onclick = async () => {
+    localStorage.setItem("home_api", $("a_api").value.trim().replace(/\\/$/, ""));
+    localStorage.setItem("home_key", $("a_key").value.trim());
+    try{
+      await api("/api/settings", {method:"POST", body:{ system_prompt:$("a_prompt").value, temperature:Number($("a_temp").value), max_context_rounds:Number($("a_rounds").value), compress_threshold:Number($("a_ct").value) }});
+      $("a_msg").textContent = "存好了";
+    }catch(e){ $("a_msg").textContent = "没存上：" + e.message; }
+  };
+}
+function showHome(){
+  subtitle.textContent = "回主页"; composer.style.display = "none";
+  page.innerHTML = '<div class="sectitle">去哪儿</div>' +
+    '<div class="row"><button class="btn" id="h_chat">聊天</button><button class="btn ghost" id="h_mem">记忆</button><button class="btn ghost" id="h_set">设置</button></div>' +
+    '<div class="sectitle">此刻</div>' +
+    '<div class="mem">这边只有这台机器上的东西：对话、记忆、设置。</div>' +
+    '<div class="mem">心跳、驱力、匣子那套，在另一台（心潮念）。</div>';
+  $("h_chat").onclick = showChat; $("h_mem").onclick = showMem; $("h_set").onclick = showSet;
+}
+$("topbar").onclick = showHome;
+$("send").onclick = send;
+$("input").addEventListener("keydown", e => { if(e.key === "Enter") send(); });
+showChat();
+</script>
+</body>
+</html>
